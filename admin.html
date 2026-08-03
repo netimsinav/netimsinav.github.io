@@ -52,6 +52,9 @@
     .reasons b{color:var(--text)}
     .empty{color:var(--muted);text-align:center;padding:30px}
     .note{font-size:12px;color:var(--muted);margin-top:6px;font-style:italic}
+    .rep .clearBtn{margin-top:12px;width:auto;padding:8px 14px;font-size:13px;
+      background:var(--ok);color:#fff;border:none;border-radius:8px;cursor:pointer}
+    .rep .clearBtn:disabled{opacity:.6}
   </style>
 </head>
 <body>
@@ -162,6 +165,7 @@
           ${optsHtml}${textAnswer}
           ${it.note ? `<div class="note">Açıklama: ${esc(it.note)}</div>` : ""}
           ${reasons}
+          <button class="clearBtn" data-ex="${esc(it.exercise_id)}">✓ Çözüldü / Temizle</button>
         </div>`;
       }).join("");
     }
@@ -185,6 +189,21 @@
     $("email").addEventListener("keydown", (e) => { if (e.key === "Enter") $("loginBtn").click(); });
     $("refreshBtn").addEventListener("click", loadData);
     $("logoutBtn").addEventListener("click", async () => { await sb.auth.signOut(); showPanel(false); });
+
+    // Rapor temizleme (event delegation)
+    $("reports").addEventListener("click", async (e) => {
+      const btn = e.target.closest(".clearBtn");
+      if (!btn) return;
+      if (!confirm("Bu sorunun raporları temizlensin mi? (Çözüldü / gerek yok)")) return;
+      btn.disabled = true; btn.textContent = "Temizleniyor…";
+      const { error } = await sb.rpc("admin_clear_reports", { p_exercise_id: btn.getAttribute("data-ex") });
+      if (error){
+        alert("Hata: " + error.message);
+        btn.disabled = false; btn.textContent = "✓ Çözüldü / Temizle";
+        return;
+      }
+      loadData();
+    });
 
     // Oturum kalıcı: sayfayı yeniden açınca hâlâ giriş yapmışsa panele geç.
     (async () => {
