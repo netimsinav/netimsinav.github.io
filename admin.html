@@ -60,9 +60,12 @@
     <div class="brand">NETİM · ADMIN</div>
     <h1>Yönetici Girişi</h1>
     <div id="loginErr" class="err"></div>
-    <input id="email" type="email" placeholder="E-posta" autocomplete="username" />
-    <input id="password" type="password" placeholder="Şifre" autocomplete="current-password" />
-    <button id="loginBtn">Giriş yap</button>
+    <div id="loginNotice" class="err" style="color:var(--ok)"></div>
+    <input id="email" type="email" placeholder="E-posta (netimsinav@gmail.com)" autocomplete="username" />
+    <button id="loginBtn">Giriş linki gönder</button>
+    <p class="note" style="text-align:center;margin-top:14px">
+      E-postana bir giriş linki göndeririz. Şifre gerekmez — linke tıklayınca içeri girersin.
+    </p>
   </div>
 
   <!-- PANEL -->
@@ -164,16 +167,22 @@
     }
 
     $("loginBtn").addEventListener("click", async () => {
-      $("loginErr").textContent = "";
-      $("loginBtn").disabled = true; $("loginBtn").textContent = "Giriş yapılıyor…";
-      const { error } = await sb.auth.signInWithPassword({
-        email: $("email").value.trim(), password: $("password").value,
+      $("loginErr").textContent = ""; $("loginNotice").textContent = "";
+      const email = $("email").value.trim();
+      if (!email){ $("loginErr").textContent = "E-posta gir."; return; }
+      $("loginBtn").disabled = true; $("loginBtn").textContent = "Gönderiliyor…";
+      const { error } = await sb.auth.signInWithOtp({
+        email,
+        options: {
+          shouldCreateUser: false,               // sadece mevcut hesap giriş linki alır
+          emailRedirectTo: window.location.href.split("#")[0], // bu admin sayfasına dön
+        },
       });
-      $("loginBtn").disabled = false; $("loginBtn").textContent = "Giriş yap";
-      if (error){ $("loginErr").textContent = "Giriş başarısız: " + error.message; return; }
-      showPanel(true); loadData();
+      $("loginBtn").disabled = false; $("loginBtn").textContent = "Giriş linki gönder";
+      if (error){ $("loginErr").textContent = "Gönderilemedi: " + error.message; return; }
+      $("loginNotice").textContent = "Giriş linki " + email + " adresine gönderildi. Mailini aç ve linke tıkla.";
     });
-    $("password").addEventListener("keydown", (e) => { if (e.key === "Enter") $("loginBtn").click(); });
+    $("email").addEventListener("keydown", (e) => { if (e.key === "Enter") $("loginBtn").click(); });
     $("refreshBtn").addEventListener("click", loadData);
     $("logoutBtn").addEventListener("click", async () => { await sb.auth.signOut(); showPanel(false); });
 
